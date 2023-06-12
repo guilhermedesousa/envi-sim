@@ -8,8 +8,16 @@ from Agent_Client_Setup import Stt, SubStt, InfoReqSeq, sttMM, sttSUBfsm, msg, a
     energy, carryRWD, iterNum, strCode, InpSensors, idxInpSensor, nofInfoRequest, cntNofReqs,\
     delaySec, keyMagREQ, REQfwd, REQrst, keyMwpPOS, OUTdie, OUTrst, OUTsuc, posX, posY
 
-host_name = socket.gethostname()
-host_IP = socket.gethostbyname(host_name)
+# host_name = socket.gethostname()
+# host_IP = socket.gethostbyname(host_name)
+
+# getting the right ip address
+host_name, _, ips = socket.gethostbyname_ex(socket.gethostname())
+host_IP = None
+for ip in ips:
+    if not ip.startswith("172.") and not ip.startswith("::1"):
+        host_IP = ip
+
 IPC_port = 15051
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = (host_IP, IPC_port)
@@ -28,6 +36,7 @@ while msg != 'esc':
             strCode = 'tempo_limite_socket'
             sttMM = Stt.ERRORS
         except socket.error as e:
+            print(e)
             strCode = 'conexao_servidor'
             sttMM = Stt.ERRORS
         break
