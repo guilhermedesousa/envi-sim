@@ -48,7 +48,7 @@ while msg != 'esc':
         break
 
     while sttMM == Stt.INTERPRETING:
-        sttMM, strCode, idxInpSensor, CurrentSensBits = interpreting(answES)
+        sttMM, strCode, idxInpSensor, CurrentSensBits = interpreting(answES) # type: ignore
 
     while sttMM == Stt.DECIDING:
         print('<< decidindo >> ', (energy - iterNum))
@@ -105,7 +105,9 @@ while msg != 'esc':
             break
 
         while sttSUBfsm == SubStt.CMD:
+            print("<< cmd >>")
             cntNofReqs = 0
+            print(sensInpBits)
             decision = infer(sensInpBits)
             msg = create_msg(decision, 1)
             sttMM = Stt.SENDING

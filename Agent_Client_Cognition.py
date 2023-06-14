@@ -36,20 +36,56 @@ def feedback_analysis(vecInpSens: np.int32, carryRWD: int) -> int:
     return outy
 
 def infer(vecInpSens: np.int32) -> int:
-    print('infer: ', len(vecInpSens), ' ', vecInpSens)
+    # define possible actions
+    grab_i = 0
+    leave_i = 1
+    move_forward_i = 3
+    rot_left_i = 11
+    rot_right_i = 12
+    rot_back_i = 13
+
+    print('infer: ', len(vecInpSens), ' ', vecInpSens) # type: ignore
     outy = -1
 
-    if len(vecInpSens) == 1:
+    if len(vecInpSens) == 1: # type: ignore
         if np.sum(vecInpSens) == 0:
             return outy
         else:
-            indx_outs = [0, 1, 3, 3, 3, 11, 12, 13]
-            outy = np.random.choice(indx_outs)
+            # indx_outs = [0, 1, 3, 3, 3, 11, 12, 13]
+            if vecInpSens[0][0] == 1: # type: ignore
+                outy = move_forward_i
+            elif vecInpSens[0][1] == 1: # type: ignore
+                outy = rot_left_i
+            elif vecInpSens[0][2] == 1: # type: ignore
+                outy = rot_back_i
+            elif vecInpSens[0][3] == 1: # type: ignore
+                outy = move_forward_i
+            elif vecInpSens[0][4] == 1: # type: ignore
+                outy = grab_i
+            elif vecInpSens[0][5] == 1: # type: ignore
+                outy = leave_i
+            elif vecInpSens[0][6] == 1: # type: ignore
+                outy = rot_right_i
+            elif vecInpSens[0][7] == 1: # type: ignore
+                outy = rot_left_i
+            elif vecInpSens[0][8] == 1: # type: ignore
+                outy = move_forward_i
+            elif vecInpSens[0][9] == 1: # type: ignore
+                outy = move_forward_i
+            elif vecInpSens[0][10] == 1: # type: ignore
+                outy = rot_back_i
+            elif vecInpSens[0][11] == 1: # type: ignore
+                outy = move_forward_i
+            elif vecInpSens[0][15] == 1: # type: ignore
+                outy = move_forward_i
+            elif vecInpSens[0][17] == 1: # type: ignore
+                outy = move_forward_i
+            
             print('out: ', OutNeurons[outy])
 
-    elif len(vecInpSens) > 1:
-        for k in range(len(vecInpSens)):
-            if np.sum(vecInpSens[k]) != 1:
+    elif len(vecInpSens) > 1: # type: ignore
+        for k in range(len(vecInpSens)): # type: ignore
+            if np.sum(vecInpSens[k]) != 1: # type: ignore
                 return outy
             else:
                 indx_outs = [0, 1, 3, 3, 3, 11, 12, 13]
@@ -269,4 +305,4 @@ def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
             posY = jrasc[1]
             str_code = keyMwpPOS
             CurrSensBits[idx_inp_sns] |= 0b1
-    return stt_mm, str_code, idx_inp_sns, CurrSensBits
+    return stt_mm, str_code, idx_inp_sns, CurrSensBits # type: ignore
