@@ -36,13 +36,45 @@ def feedback_analysis(vecInpSens: np.int32, carryRWD: int) -> int:
     return outy
 
 def infer(vecInpSens: np.int32) -> int:
-    # define possible actions
-    grab_i = 0
-    leave_i = 1
-    move_forward_i = 3
-    rot_left_i = 11
-    rot_right_i = 12
-    rot_back_i = 13
+    # define transition matrix
+    transition_matrix = [
+        [0.0, 0.0, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.0],
+        [0.0, 0.0, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.15, 0.05],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.4],
+        [0.0, 0.0, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.2, 0.0],
+        [0.7, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.8],
+        [0.0, 0.0, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.15, 0.05],
+        [0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.1],
+        [0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.1],
+        [0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.1],
+        [0.0, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.3, 0.1],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    ]
 
     print('infer: ', len(vecInpSens), ' ', vecInpSens) # type: ignore
     outy = -1
@@ -51,36 +83,9 @@ def infer(vecInpSens: np.int32) -> int:
         if np.sum(vecInpSens) == 0:
             return outy
         else:
-            # indx_outs = [0, 1, 3, 3, 3, 11, 12, 13]
-            if vecInpSens[0][0] == 1: # type: ignore
-                outy = move_forward_i
-            elif vecInpSens[0][1] == 1: # type: ignore
-                outy = rot_left_i
-            elif vecInpSens[0][2] == 1: # type: ignore
-                outy = rot_back_i
-            elif vecInpSens[0][3] == 1: # type: ignore
-                outy = move_forward_i
-            elif vecInpSens[0][4] == 1: # type: ignore
-                outy = grab_i
-            elif vecInpSens[0][5] == 1: # type: ignore
-                outy = leave_i
-            elif vecInpSens[0][6] == 1: # type: ignore
-                outy = rot_right_i
-            elif vecInpSens[0][7] == 1: # type: ignore
-                outy = rot_left_i
-            elif vecInpSens[0][8] == 1: # type: ignore
-                outy = move_forward_i
-            elif vecInpSens[0][9] == 1: # type: ignore
-                outy = move_forward_i
-            elif vecInpSens[0][10] == 1: # type: ignore
-                outy = rot_back_i
-            elif vecInpSens[0][11] == 1: # type: ignore
-                outy = move_forward_i
-            elif vecInpSens[0][15] == 1: # type: ignore
-                outy = move_forward_i
-            elif vecInpSens[0][17] == 1: # type: ignore
-                outy = move_forward_i
-            
+            enabled_sensor_i = np.where(vecInpSens[0] == 1)[0][0] # type: ignore
+            outcomes = transition_matrix[enabled_sensor_i]
+            outy = np.random.choice(len(outcomes), p=outcomes)
             print('out: ', OutNeurons[outy])
 
     elif len(vecInpSens) > 1: # type: ignore
@@ -88,8 +93,9 @@ def infer(vecInpSens: np.int32) -> int:
             if np.sum(vecInpSens[k]) != 1: # type: ignore
                 return outy
             else:
-                indx_outs = [0, 1, 3, 3, 3, 11, 12, 13]
-                outy = np.random.choice(indx_outs)
+                enabled_sensor_i = np.where(vecInpSens[0] == 1)[0][0] # type: ignore
+                outcomes = transition_matrix[enabled_sensor_i]
+                outy = np.random.choice(len(outcomes), p=outcomes)
                 print('out: ', OutNeurons[outy])
 
     else:
