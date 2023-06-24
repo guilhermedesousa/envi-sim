@@ -96,7 +96,7 @@ while msg != 'esc':
             break
 
         while sttSUBfsm == SubStt.SAVE:
-            sensInpBits[cntNofReqs] = CurrentSensBits
+            sensInpBits[cntNofReqs] = CurrentSensBits # type: ignore
             cntNofReqs = cntNofReqs + 1
             if cntNofReqs == nofInfoRequest:
                 sttSUBfsm = SubStt.CMD
@@ -105,17 +105,15 @@ while msg != 'esc':
             break
 
         while sttSUBfsm == SubStt.CMD:
-            print("<< cmd >>")
             cntNofReqs = 0
-            print(sensInpBits)
-            decision = infer(sensInpBits)
+            decision = infer(sensInpBits) # type: ignore
             msg = create_msg(decision, 1)
             sttMM = Stt.SENDING
             sttSUBfsm = SubStt.WAITCM
             break
 
         while sttSUBfsm == SubStt.CNT:
-            fdbkcode = feedback_analysis(sensInpBits, carryRWD)
+            fdbkcode = feedback_analysis(sensInpBits, carryRWD) # type: ignore
             if fdbkcode == -1:
                 strCode = 'erro => reiniciando...'
                 sttMM = Stt.ERRORS
