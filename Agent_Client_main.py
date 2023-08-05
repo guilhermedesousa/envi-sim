@@ -11,14 +11,15 @@ from Agent_Client_Setup import Stt, SubStt, InfoReqSeq, sttMM, sttSUBfsm, msg, a
 # host_name = socket.gethostname()
 # host_IP = socket.gethostbyname(host_name)
 
-# getting the right ip address
+# make the IPC conection with the EnviSim process
 host_name, _, ips = socket.gethostbyname_ex(socket.gethostname())
 host_IP = None
+
 for ip in ips:
     if not ip.startswith("172.") and not ip.startswith("::1"):
         host_IP = ip
 
-IPC_port = 15051
+IPC_port = 15051 # EnviSim process port
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_address = (host_IP, IPC_port)
 
@@ -27,6 +28,7 @@ while msg != 'esc':
         msg = 'esc'
         break
 
+    # BEGIN FSM state - create a socket and try to connect to the EnviSim process
     while sttMM == Stt.BEGIN:
         try:
             sock.connect(server_address)
@@ -40,27 +42,31 @@ while msg != 'esc':
             strCode = 'conexao_servidor'
             sttMM = Stt.ERRORS
         break
-
+    
+    # RESTARTING FSM state - send the restart request to the EnviSim
     while sttMM == Stt.RESTARTING:
         msg = '{\"' + keyMagREQ + '\":[\"' + REQrst + '\",0]}'
         sttSUBfsm = SubStt.RES
         sttMM = Stt.SENDING
         break
-
+    
+    # INTERPRETING FSM state - interpret the response sent by EnviSim
     while sttMM == Stt.INTERPRETING:
         sttMM, strCode, idxInpSensor, CurrentSensBits = interpreting(answES) # type: ignore
 
+    # DECIDING FSM state - take decisions and generate: command-action-request
     while sttMM == Stt.DECIDING:
         print('<< decidindo >> ', (energy - iterNum))
 
         if iterNum >= energy:
             print('O agente não tem mais ENERGIA!')
-            strCode = 'semEnergia'
+            strCode = 'noEnergy'
             sttMM = Stt.EXCEPTIONS
             break
         else:
             iterNum = iterNum + 1
 
+        # RES sub-FSM state - control how many times the agent requests infos from EnviSim
         while sttSUBfsm == SubStt.RES:
             if InpSensors[idxInpSensor] == 'inp_' + OUTrst:
                 nofIter = 0
@@ -69,17 +75,20 @@ while msg != 'esc':
                 strCode = 'erro => esperava reiniciado...'
                 sttMM = Stt.ERRORS
             break
-
+        
+        # START sub-FSM state - request information only
         while sttSUBfsm == SubStt.START:
             cntNofReqs = 0
             sensInpBits = np.zeros((nofInfoRequest, 32), dtype=np.int32)
             sttSUBfsm = SubStt.ASK
             break
-
+        
+        # ASK sub-FSM state - ask for infos through requests
         while sttSUBfsm == SubStt.ASK:
             if cntNofReqs < nofInfoRequest:
                 d = str(InfoReqSeq[cntNofReqs][1])
                 msg = '{\"' + keyMagREQ + '\":[\"'
+
                 if InfoReqSeq[cntNofReqs][0] == 'fwd':
                     msg = msg + REQfwd + '\",' + d + ']}'
                 elif InfoReqSeq[cntNofReqs][0] == 'r90':
@@ -90,20 +99,24 @@ while msg != 'esc':
                     msg = msg + REQr45 + '\",' + d + ']}'
                 elif InfoReqSeq[cntNofReqs][0] == 'l45':
                     msg = msg + REQl45 + '\",' + d + ']}'
+                
                 sttMM = Stt.SENDING
                 sttSUBfsm = SubStt.WAITRQ
                 break
             break
-
+        
+        # SAVE sub-FSM state - save the response of a request
         while sttSUBfsm == SubStt.SAVE:
             sensInpBits[cntNofReqs] = CurrentSensBits # type: ignore
             cntNofReqs = cntNofReqs + 1
+
             if cntNofReqs == nofInfoRequest:
                 sttSUBfsm = SubStt.CMD
             else:
                 sttSUBfsm = SubStt.ASK
             break
-
+        
+        # CMD sub-FSM state - send a command to the EnviSim
         while sttSUBfsm == SubStt.CMD:
             cntNofReqs = 0
             decision = infer(sensInpBits) # type: ignore
@@ -111,9 +124,11 @@ while msg != 'esc':
             sttMM = Stt.SENDING
             sttSUBfsm = SubStt.WAITCM
             break
-
+        
+        # CNT sub-FSM state - decide if the session is ended or keep it
         while sttSUBfsm == SubStt.CNT:
-            fdbkcode = feedback_analysis(sensInpBits, carryRWD) # type: ignore
+            fdbkcode = feedback_analysis(CurrentSensBits, carryRWD) # type: ignore
+            
             if fdbkcode == -1:
                 strCode = 'erro => reiniciando...'
                 sttMM = Stt.ERRORS
@@ -133,21 +148,25 @@ while msg != 'esc':
                 sttMM = Stt.EXCEPTIONS
                 sttSUBfsm = SubStt.ASK
                 break
+            
             msg = create_msg(fdbkcode, 0)
             sttMM = Stt.SENDING
             sttSUBfsm = SubStt.ASK
             break
-
+        
+        # WAITRQ sub-FSM state - wait for all requests be completed
         while sttSUBfsm == SubStt.WAITRQ:
             sttSUBfsm = SubStt.SAVE
             break
-
+        
+        # WAITCM sub-FSM state - wait for the feedback response after a command
         while sttSUBfsm == SubStt.WAITCM:
             if delaySec > 0:
                 time.sleep(delaySec)
             sttSUBfsm = SubStt.CNT
             break
 
+    # EXCEPTIONS FSM state - a message has been received from EnviSim
     while sttMM == Stt.EXCEPTIONS:
         if strCode == OUTrst:
             msg = '{\"' + keyMagREQ + '\":[\"' + REQfwd + '\",1]}'
@@ -182,11 +201,13 @@ while msg != 'esc':
             break
         sys.exit(-2)
 
+    # ERROR FSM state - only for tests
     while sttMM == Stt.ERRORS:
         print('--> estado ERRORS::')
         print(strCode)
         sys.exit(-1)
 
+    # RECEIVING FSM state - wait for a response from EnviSim
     while sttMM == Stt.RECEIVING:
         try:
             answES = sock.recv(256)
@@ -197,7 +218,8 @@ while msg != 'esc':
             strCode = 'socket_error'
             sttMM = Stt.ERRORS
         break
-
+    
+    # SENDING FSM state - send the content to the EnviSim
     while sttMM == Stt.SENDING:
         print('enviando = ', msg)
         if msg != '':
@@ -216,6 +238,7 @@ while msg != 'esc':
             sttMM = Stt.ERRORS
             break
 
+    # FOR TESTS FSM state - only for tests
     while sttMM == Stt.FOR_TESTS:
         print('>> state FOR_TESTS <<')
         break

@@ -1,8 +1,8 @@
 from enum import Enum
 import json
 import numpy as np
-import sys
 
+# defines different FSM states of the agent
 class Stt(Enum):
     BEGIN = 1
     RECEIVING = 2
@@ -15,6 +15,7 @@ class Stt(Enum):
     ERRORS = 9
     FOR_TESTS = 10
 
+# defines different sub-FSM states for the agent
 class SubStt(Enum):
     RES = 1
     START = 2
@@ -28,25 +29,71 @@ class SubStt(Enum):
 sttMM = Stt.BEGIN
 sttSUBfsm = SubStt.RES
 
+# list which contains a sequence of REQUESTS to EnviSim before DECIDES
 InfoReqSeq = [["fwd", 1]]
 nofInfoRequest = len(InfoReqSeq)
 
 CurrentSensBits = np.zeros((nofInfoRequest, 32), dtype=np.int32)
 
-InpSensors = ["inp_nothing", "inp_breeze", "inp_danger", "inp_flash", "inp_goal",
-              "inp_initial", "inp_obstruction", "inp_stench", "inp_bf", "inp_bfs",
-              "inp_bs", "inp_fs", "inp_boundary", "inp_obstacle", "inp_wall",
-              "inp_cannot", "inp_died", "inp_grabbed", "inp_none", "inp_restarted",
-              "inp_success", "inp_pheromone", "inp_dir_n", "inp_dir_ne", "inp_dir_e",
-              "inp_dir_se", "inp_dir_s", "inp_dir_sw", "inp_dir_w", "inp_dir_nw",
-              "inp_deviation", "go", "_0", "_1", "mGB", "mFLSH"]
+# input sensors
+InpSensors = ["inp_nothing",
+              "inp_breeze",
+              "inp_danger",
+              "inp_flash",
+              "inp_goal",
+              "inp_initial",
+              "inp_obstruction",
+              "inp_stench",
+              "inp_bf",
+              "inp_bfs",
+              "inp_bs",
+              "inp_fs",
+              "inp_boundary",
+              "inp_obstacle",
+              "inp_wall",
+              "inp_cannot",
+              "inp_died",
+              "inp_grabbed",
+              "inp_none",
+              "inp_restarted",
+              "inp_success",
+              "inp_pheromone",
+              "inp_dir_n",
+              "inp_dir_ne",
+              "inp_dir_e",
+              "inp_dir_se",
+              "inp_dir_s",
+              "inp_dir_sw",
+              "inp_dir_w",
+              "inp_dir_nw",
+              "inp_deviation",
+              "go",
+              "_0",
+              "_1",
+              "mGB",
+              "mFLSH"
+            ]
 
-nofInpSensors = len(InpSensors)
+nofInpSensors = len(InpSensors) # 36
 
-OutNeurons = ["out_act_grab", "out_act_leave", "out_act_nill", "out_mov_forward", "out_req_forward", "out_req_left",
-              "out_req_left45", "out_req_orientation", "out_req_restart", "out_req_right", "out_req_right45",
-              "out_rot_left", "out_rot_right", "out_rot_back"]
+# output neurons
+OutNeurons = ["out_act_grab",
+              "out_act_leave",
+              "out_act_nill",
+              "out_mov_forward",
+              "out_req_forward",
+              "out_req_left",
+              "out_req_left45",
+              "out_req_orientation",
+              "out_req_restart",
+              "out_req_right",
+              "out_req_right45",
+              "out_rot_left",
+              "out_rot_right",
+              "out_rot_back"
+              ]
 
+# exchanged messages from AGENT to EnviSim
 LstMsgsAGtoES = [[['act'], ['grab', 'leave', 'nill']],
                  [['move'], ['forward']],
                  [['request'], ['forward', 'left', 'left45', 'orientation', 'restart', 'right', 'right45']],
@@ -75,6 +122,7 @@ ROTlft: str = LstMsgsAGtoES[3][1][0]
 ROTrgt: str = LstMsgsAGtoES[3][1][1]
 ROTbck: str = LstMsgsAGtoES[3][1][2]
 
+# exchanged messages from Envisim to AGENT
 LstMsgEStoAG = [[['sense'], ['breeze', 'danger', 'flash', 'goal', 'initial', 'obstruction', 'stench']],
                 [['collision'], ['boundary', 'obstacle', 'wall']],
                 [['outcome'], ['cannot', 'died', 'grabbed', 'none', 'restarted', 'success']],

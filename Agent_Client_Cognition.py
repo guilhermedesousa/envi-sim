@@ -1,4 +1,3 @@
-import random
 import json
 from typing import List
 
@@ -14,13 +13,17 @@ from Agent_Client_Setup import keyMagACT, keyMagMOV, keyMagREQ, keyMagROT, ACTgr
     OUTcnt, OUTdie, OUTgrb, OUTnon, OUTrst, OUTsuc, SRVcnn, SRVinv, SRVnor, SRVpsd, \
     DIRn, DIRne, DIRe, DIRse, DIRs, DIRsw, DIRw, DIRnw
 
+# analyze the response/feedback received from EnviSim
 def feedback_analysis(vecInpSens: np.int32, carryRWD: int) -> int:
     outy = -1
+
     if np.sum(vecInpSens) != 1:
         return outy
+    
     else:
         inx = np.argmax(vecInpSens)
         tmpStr: str = InpSensors[inx]
+
         if tmpStr == 'inp_' + SNSgol and carryRWD == 0:
             outy = OutNeurons.index("out_act_grab")
         elif tmpStr == 'inp_' + SNSini and carryRWD == 1:
@@ -33,8 +36,10 @@ def feedback_analysis(vecInpSens: np.int32, carryRWD: int) -> int:
             outy = -100
         else:
             outy = OutNeurons.index("out_act_nill")
+
     return outy
 
+# it is the agent intelligence, that means it takes decisions
 def infer(vecInpSens: np.int32) -> int:
     # define transition matrix
     transition_matrix = [
@@ -88,23 +93,13 @@ def infer(vecInpSens: np.int32) -> int:
             outy = np.random.choice(len(outcomes), p=outcomes)
             print('out: ', OutNeurons[outy])
 
-    elif len(vecInpSens) > 1: # type: ignore
-        for k in range(len(vecInpSens)): # type: ignore
-            if np.sum(vecInpSens[k]) != 1: # type: ignore
-                return outy
-            else:
-                enabled_sensor_i = np.where(vecInpSens[0] == 1)[0][0] # type: ignore
-                outcomes = transition_matrix[enabled_sensor_i]
-                outy = np.random.choice(len(outcomes), p=outcomes)
-                print('out: ', OutNeurons[outy])
-
-    else:
-        return outy
     return outy
 
+# create a message to the EnviSim requesting infos from Wumpus World
 def create_msg(indx_out: int, dist: int) -> str:
     rasc: str = OutNeurons[indx_out]
     msg = ''
+
     if rasc == 'out_req_' + REQfwd:
         msg = '{\"' + keyMagREQ + '\":[\"' + REQfwd + '\",' + str(dist) + ']}'
     elif rasc == 'out_req_' + REQlft:
@@ -136,6 +131,7 @@ def create_msg(indx_out: int, dist: int) -> str:
 
     return msg
 
+# interpret the message sent by EnviSim
 def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
     jobj = json.loads(envisim_answ)
     str_code = ''
@@ -143,172 +139,247 @@ def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
     idx_inp_sns: int = 0
     CurrSensBits = np.zeros(32, dtype=np.int32)
 
+    # if the message contains the key "server"
     if keyMwpSRV in jobj:
         jrasc = jobj[keyMwpSRV]
         if SRVcnn in jrasc:
             str_code = SRVcnn
             stt_mm = Stt.RESTARTING
+
         elif SRVinv in jrasc:
             str_code = 'msg_invalid'
             stt_mm = Stt.ERRORS
+
         elif SRVpsd in jrasc:
             str_code = 'server_paused'
             stt_mm = Stt.ERRORS
+
         elif SRVnor in jrasc:
             str_code = 'server_normal'
             stt_mm = Stt.ERRORS
 
+    # if the message contains the key "outcome"
     elif keyMwpOUT in jobj:
         jrasc = jobj[keyMwpOUT]
+
         if OUTrst in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + OUTrst)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_' + OUTrst
+
         elif OUTgrb in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + OUTgrb)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + OUTgrb
         elif OUTdie in jrasc:
+
             idx_inp_sns = InpSensors.index('inp_' + OUTdie)
             CurrSensBits[idx_inp_sns] |= 0b1
-            str_code = OUTdie
+            str_code = 'inp_' + OUTdie
             stt_mm = Stt.EXCEPTIONS
+
         elif OUTsuc in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + OUTsuc)
             CurrSensBits[idx_inp_sns] |= 0b1
-            str_code = OUTsuc
+            str_code = 'inp_' + OUTsuc
             stt_mm = Stt.EXCEPTIONS
+
         elif OUTcnt in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + OUTcnt)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + OUTcnt
+
         elif OUTnon in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + OUTnon)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + OUTnon
+
         else:
             str_code = 'undefined_outcome'
             stt_mm = Stt.ERRORS
 
+    # if the message contains the key "collision"
     elif keyMwpCOL in jobj:
         jrasc = jobj[keyMwpCOL]
+
         if CLDbnd in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + CLDbnd)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + CLDbnd
+
         elif CLDobs in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + CLDobs)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + CLDobs
+
         elif CLDwll in jrasc:
             idx_inp_sns = InpSensors.index('inp_' + CLDwll)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + CLDwll
+
         else:
             print('Attention: collision came - undefined - ?!')
             str_code = 'undefined_collision'
             stt_mm = Stt.ERRORS
 
+    # if the message contains the key "sense"
     elif keyMwpSNS in jobj:
         jrasc = jobj[keyMwpSNS]
+
         if len(jrasc) == 3:
             if (SNSbrz in jrasc) and (SNSfsh in jrasc) and (SNStch in jrasc):
                 idx_inp_sns = InpSensors.index('inp_bfs')
                 CurrSensBits[idx_inp_sns] |= 0b1
+                str_code = 'inp_bfs'
+
         elif len(jrasc) == 2:
             if (SNSbrz in jrasc) and (SNSfsh in jrasc):
                 idx_inp_sns = InpSensors.index('inp_bf')
                 CurrSensBits[idx_inp_sns] |= 0b1
+                str_code = 'inp_bf'
+
             elif (SNSbrz in jrasc) and (SNStch in jrasc):
                 idx_inp_sns = InpSensors.index('inp_bs')
                 CurrSensBits[idx_inp_sns] |= 0b1
+                str_code = 'inp_bs'
+
             elif (SNSfsh in jrasc) and (SNStch in jrasc):
                 idx_inp_sns = InpSensors.index('inp_fs')
                 CurrSensBits[idx_inp_sns] |= 0b1
+                str_code = 'inp_fs'
+
         elif len(jrasc) > 0:
             for item in jrasc:
                 if SNSfsh in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNSfsh)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNSfsh
+
                 elif SNSdng in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNSdng)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNSdng
+
                 elif SNSobs in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNSobs)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNSobs
+                    
                 elif SNSgol in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNSgol)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNSgol
+
                 elif SNSini in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNSini)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNSini
+
                 elif SNSbrz in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNSbrz)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNSbrz
+
                 elif SNStch in item:
                     idx_inp_sns = InpSensors.index('inp_' + SNStch)
                     CurrSensBits[idx_inp_sns] |= 0b1
+                    str_code = 'inp_' + SNStch
         else:
             idx_inp_sns = InpSensors.index('inp_' + SNSnth)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_' + SNSnth
 
+    # if the message contains the key "direction"
     if keyMwpDIR in jobj:
         jrasc = jobj[keyMwpDIR]
+
         if DIRn in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRn)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRn
+
         elif DIRne in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRne)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRne
+
         elif DIRe in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRe)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRe
+
         elif DIRse in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRse)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRse
+
         elif DIRs in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRs)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRs
+
         elif DIRsw in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRsw)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRsw
+
         elif DIRw in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRw)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRw
+
         elif DIRnw in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRnw)
             CurrSensBits[idx_inp_sns] |= 0b1
+            str_code = 'inp_dir_' + DIRnw
+
         else:
             print('Atenção: DIRECTION veio - indefinido - ?!')
             str_code = 'direcao_indefinida'
             stt_mm = Stt.ERRORS
 
+    # if the message contains the key "pheromone" (optional)
     if keyMwpPHR in jobj:
         jrasc = jobj[keyMwpPHR]
+
         if len(jrasc) != 1:
             print('Atenção: PHEROMONE chegou - indefinido - ?!')
             str_code = 'feromônio_indefinido'
             stt_mm = Stt.ERRORS
+
         else:
             pherom = jrasc[0]
             idx_inp_sns = InpSensors.index('inp_' + keyMwpPHR)
             CurrSensBits[idx_inp_sns] |= 0b1
 
+    # if the message contains the key "devitation" (optional)
     if keyMwpDVA in jobj:
         jrasc = jobj[keyMwpDVA]
+
         if len(jrasc) != 1:
             print('Atenção: ângulo DEVIATION veio - indefinido - ?!')
             str_code = 'desvio_indefinido'
             stt_mm = Stt.ERRORS
+
         else:
             devAngle = jrasc[0]
             idx_inp_sns = InpSensors.index('inp_' + keyMwpDVA)
             CurrSensBits[idx_inp_sns] |= 0b1
 
+    # if the message contains the key "position" (optional)
     if keyMwpPOS in jobj:
         stt_mm = Stt.EXCEPTIONS
         jrasc = jobj[keyMwpPOS]
+
         if len(jrasc) != 2:
             print('Atenção: POSIÇÃO recebida - indefinida - ?!')
             str_code = 'posição_indefinida'
             stt_mm = Stt.ERRORS
+            
         else:
             posX = jrasc[0]
             posY = jrasc[1]
             str_code = keyMwpPOS
             CurrSensBits[idx_inp_sns] |= 0b1
+    
     return stt_mm, str_code, idx_inp_sns, CurrSensBits # type: ignore
