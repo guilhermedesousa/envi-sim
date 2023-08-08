@@ -119,7 +119,7 @@ while msg != 'esc':
         # CMD sub-FSM state - send a command to the EnviSim
         while sttSUBfsm == SubStt.CMD:
             cntNofReqs = 0
-            decision = infer(sensInpBits) # type: ignore
+            decision = infer(sensInpBits, carryRWD) # type: ignore
             msg = create_msg(decision, 1)
             sttMM = Stt.SENDING
             sttSUBfsm = SubStt.WAITCM
@@ -148,7 +148,7 @@ while msg != 'esc':
                 sttMM = Stt.EXCEPTIONS
                 sttSUBfsm = SubStt.ASK
                 break
-            
+
             msg = create_msg(fdbkcode, 0)
             sttMM = Stt.SENDING
             sttSUBfsm = SubStt.ASK
