@@ -23,12 +23,18 @@ def restart():
     sock.sendall(msg.encode("utf-8"))
     answES = sock.recv(256)
 
+def softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return e_x / e_x.sum()
+
 # choose an action using epsilon-greedy policy
 def choose_action(state):
     if np.random.uniform(0, 1) < epsilon:
         return np.random.choice(actions)
     else:
-        return np.argmax(Q[state])
+        action_logits = Q[state]
+        action_probs = softmax(action_logits)
+        return np.random.choice(len(action_probs), p=action_probs)
 
 # map the chosen action with the correct for EnviSim
 def map_output_neurons(action):
@@ -65,12 +71,12 @@ def send_cmd(msg):
 def interpret(answES):
     sttMM, strCode, idxInpSensor, CurrentSensBits = interpreting(answES)
 
-    request_sensors = [19, 22, 23, 24, 25, 26, 27, 28, 29]
+    # request_sensors = [19, 22, 23, 24, 25, 26, 27, 28, 29]
 
-    if idxInpSensor in request_sensors:
-        return request_forward()
+    if idxInpSensor in [12, 16, 15, 17]:
+        return idxInpSensor
     
-    return idxInpSensor
+    return request_forward()
 
 # get the next state
 def get_next_state(outy):
@@ -92,7 +98,7 @@ def get_next_state(outy):
 states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 # rewards for each state
-rewards = [0, -5, -10, 5, 50, 0, -1, -5, 3, 3, -5, 3, -3, -5, -100, 100]
+rewards = [0, -5, -5, 1, 10, 0, -1, -5, 3, 3, -5, 3, -3, -5, -100, 200]
 
 # possible actions the agent can take
 actions = [0, 1, 2, 3, 4]
@@ -104,14 +110,14 @@ Q = np.zeros((len(states), len(actions)))
 alpha = 0.1
 
 # discount factor
-gamma = 0.9
+gamma = 0.3
 
 # exploration function
 epsilon = 1.0
 final_epsilon = 0.05
 epsilon_decay_rate = 0.95
-    
-num_episodes = 50
+
+num_episodes = 100
 
 for episode in range(num_episodes):
     restart()
@@ -140,35 +146,6 @@ for episode in range(num_episodes):
 
 print(Q)
 
-# normalize the Q table
-for state in range(len(states)):
-    total_prob = np.sum(Q[state])
-    if total_prob > 0:
-        Q[state] /= total_prob
-
-print(Q)
-
-# input sensors
-    # [ 0] inp_nothing
-    # [ 1] inp_breeze
-    # [ 2] inp_danger
-    # [ 3] inp_flash
-    # [ 4] inp_goal
-    # [ 5] inp_initial
-    # [ 6] inp_obstruction
-    # [ 7] inp_stench
-    # [ 8] inp_bf
-    # [ 9] inp_bfs
-    # [10] inp_bs
-    # [11] inp_fs
-    # [12] inp_boundary
-    # [13] inp_cannot
-    # [14] inp_died
-    # [15] inp_grabbed
-
-# output neurons
-    # [ 0] out_act_grab
-    # [ 1] out_mov_forward
-    # [ 2] out_rot_left
-    # [ 3] out_rot_right
-    # [ 4] out_rot_back
+for row in Q:
+    row_str = ', '.join([str(value) for value in row])
+    print(row_str)

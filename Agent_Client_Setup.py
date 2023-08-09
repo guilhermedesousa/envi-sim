@@ -25,6 +25,8 @@ class SubStt(Enum):
     CNT = 6
     WAITRQ = 7
     WAITCM = 8
+    RETURNCMD = 9
+    WAITRET = 10
 
 sttMM = Stt.BEGIN
 sttSUBfsm = SubStt.RES
@@ -186,11 +188,12 @@ answES = ''
 posX = 0
 posY = 0
 direction: str = 'e'
-pherom = 0
+pherom = 1
 devAngle = 0
 
 strCode = ''
 idxInpSensor: int = 0
 decision: int = 0
+nextReturnOutIdx = 0
 
 delaySec = 0.25

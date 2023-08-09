@@ -6,7 +6,7 @@ from Agent_Client_Cognition import *
 
 from Agent_Client_Setup import Stt, SubStt, InfoReqSeq, sttMM, sttSUBfsm, msg, answES, \
     energy, carryRWD, iterNum, strCode, InpSensors, idxInpSensor, nofInfoRequest, cntNofReqs,\
-    delaySec, keyMagREQ, REQfwd, REQrst, keyMwpPOS, OUTdie, OUTrst, OUTsuc, posX, posY
+    delaySec, keyMagREQ, REQfwd, REQrst, keyMwpPOS, OUTdie, OUTrst, OUTsuc, posX, posY, nextReturnOutIdx
 
 # host_name = socket.gethostname()
 # host_IP = socket.gethostbyname(host_name)
@@ -136,6 +136,8 @@ while msg != 'esc':
                 print('-> a RECOMPENSA foi coletada <-')
                 carryRWD = 1
                 nofIter = 0
+                sttSUBfsm = SubStt.RETURNCMD
+                break
             elif fdbkcode == 100:
                 print('O Agente GANHOU - sucesso!')
                 strCode = OUTsuc
@@ -165,6 +167,109 @@ while msg != 'esc':
                 time.sleep(delaySec)
             sttSUBfsm = SubStt.CNT
             break
+        
+        # RETURNCMD sub-FSM state - send commands to return to the initial
+        while sttSUBfsm == SubStt.RETURNCMD:
+            devReq = '{"request": ["orientation",1]}'
+
+            sock.sendall(devReq.encode("utf-8"))
+            answES = sock.recv(256)
+            answES = answES.decode("utf-8")
+
+            while answES != '{"deviation":[174]}':
+                print('<< decidindo >> ', (energy - iterNum))
+
+                rotRight = '{"rotate":["right",2]}'
+                sock.sendall(rotRight.encode("utf-8"))
+                direction = sock.recv(256)
+
+                time.sleep(delaySec)
+
+                if iterNum >= energy:
+                    print('O agente não tem mais ENERGIA!')
+                    strCode = 'noEnergy'
+                    sttMM = Stt.EXCEPTIONS
+                    break
+                else:
+                    iterNum = iterNum + 1
+
+                sock.sendall(devReq.encode("utf-8"))
+                answES = sock.recv(256)
+                answES = answES.decode("utf-8")
+                print(answES)
+            
+            movFor = '{"move":["forward",1]}'
+
+            for i in range(2):
+                print('<< decidindo >> ', (energy - iterNum))
+
+                sock.sendall(movFor.encode("utf-8"))
+
+                time.sleep(delaySec)
+
+                if iterNum >= energy:
+                    print('O agente não tem mais ENERGIA!')
+                    strCode = 'noEnergy'
+                    sttMM = Stt.EXCEPTIONS
+                    break
+                else:
+                    iterNum = iterNum + 1
+            
+            rotLeft = '{"rotate":["left",2]}'
+            print('<< decidindo >> ', (energy - iterNum))
+            sock.sendall(rotLeft.encode("utf-8"))
+            time.sleep(delaySec)
+
+            if iterNum >= energy:
+                print('O agente não tem mais ENERGIA!')
+                strCode = 'noEnergy'
+                sttMM = Stt.EXCEPTIONS
+                break
+            else:
+                iterNum = iterNum + 1
+
+            for i in range(3):
+                print('<< decidindo >> ', (energy - iterNum))
+
+                sock.sendall(movFor.encode("utf-8"))
+
+                time.sleep(delaySec)
+
+                if iterNum >= energy:
+                    print('O agente não tem mais ENERGIA!')
+                    strCode = 'noEnergy'
+                    sttMM = Stt.EXCEPTIONS
+                    break
+                else:
+                    iterNum = iterNum + 1
+            
+            leave = '{"act":["leave",1]}'
+            print('<< decidindo >> ', (energy - iterNum))
+            sock.sendall(leave.encode("utf-8"))
+            time.sleep(delaySec)
+
+            if iterNum >= energy:
+                print('O agente não tem mais ENERGIA!')
+                strCode = 'noEnergy'
+                sttMM = Stt.EXCEPTIONS
+                break
+            else:
+                iterNum = iterNum + 1
+            
+            print('O Agente GANHOU - sucesso!')
+            strCode = OUTsuc
+            sttMM = Stt.EXCEPTIONS
+            sttSUBfsm = SubStt.ASK
+            break
+
+        while sttSUBfsm == SubStt.WAITRET:
+            time.sleep(delaySec)
+
+            
+
+            
+
+
 
     # EXCEPTIONS FSM state - a message has been received from EnviSim
     while sttMM == Stt.EXCEPTIONS:
