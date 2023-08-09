@@ -25,8 +25,7 @@ class SubStt(Enum):
     CNT = 6
     WAITRQ = 7
     WAITCM = 8
-    RETURNCMD = 9
-    WAITRET = 10
+    WAITCM2 = 9
 
 sttMM = Stt.BEGIN
 sttSUBfsm = SubStt.RES

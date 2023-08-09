@@ -19,9 +19,9 @@ print('Conectado ao Servidor: %s >> porta: %s' % server_address)
 
 # restart the EnviSim
 def restart():
-    msg = '{"request":["restart",0]}'
+    msg = '{"request":["restart",1]}'
     sock.sendall(msg.encode("utf-8"))
-    answES = sock.recv(256)
+    sock.recv(256)
 
 def softmax(x):
     e_x = np.exp(x - np.max(x))
@@ -30,7 +30,24 @@ def softmax(x):
 # choose an action using epsilon-greedy policy
 def choose_action(state):
     if np.random.uniform(0, 1) < epsilon:
-        return np.random.choice(actions)
+        if state == 0:
+            return np.random.choice([1,3])
+        elif state == 4:
+            return np.random.choice([1,2])
+        elif state == 20:
+            return np.random.choice([0,3])
+        elif state == 24:
+            return np.random.choice([0,2])
+        elif state in [1,2,3]:
+            return np.random.choice([1,2,3])
+        elif state in [21,22,23]:
+            return np.random.choice([0,2,3])
+        elif state in [5,10,15]:
+            return np.random.choice([0,1,3])
+        elif state in [9,14,19]:
+            return np.random.choice([0,1,2,])
+        else:
+            return np.random.choice(actions)
     else:
         action_logits = Q[state]
         action_probs = softmax(action_logits)
@@ -38,6 +55,7 @@ def choose_action(state):
 
 # map the chosen action with the correct for EnviSim
 def map_output_neurons(action):
+
     outy = action
 
     if action == 1:
@@ -53,7 +71,7 @@ def map_output_neurons(action):
 
 # request forward for information
 def request_forward():
-    msg = '{"request":["forward",1]}'
+    msg = '{"request":["forward",0]}'
     sock.sendall(msg.encode("utf-8"))
     answES = sock.recv(256)
     answES = answES.decode("utf-8")
@@ -78,30 +96,42 @@ def interpret(answES):
     
     return request_forward()
 
-# get the next state
-def get_next_state(outy):
-    msg = create_msg(outy, 1)
-    idx_inp_sensor = send_cmd(msg)
-
-    next_state = idx_inp_sensor
-
-    if idx_inp_sensor == 15:
-        next_state = 13
-    elif idx_inp_sensor == 16:
-        next_state = 14
-    elif idx_inp_sensor == 17:
-        next_state = 15
-    
-    return next_state
+next_state_matrix = [
+    [0, 5, 0, 1],
+    [0, 6, 0, 2],
+    [0, 7, 1, 3],
+    [0, 8, 2, 4],
+    [0, 9, 3, 0],
+    [0, 10, 0, 6],
+    [1, 11, 5, 7],
+    [2, 12, 6, 8],
+    [3, 13, 7, 9],
+    [4, 14, 8, 0],
+    [5, 15, 0, 11],
+    [6, 16, 10, 12],
+    [7, 17, 11, 13],
+    [8, 18, 12, 14],
+    [9, 19, 13, 0],
+    [10, 20, 0, 16],
+    [11, 21, 15, 17],
+    [12, 22, 16, 18],
+    [13, 23, 17, 19],
+    [14, 24, 18, 0],
+    [15, 0, 0, 21],
+    [16, 0, 20, 22],
+    [17, 0, 21, 23],
+    [18, 0, 22, 24],
+    [19, 0, 23, 0]
+]
 
 # possible states of the agent
-states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
+
+# possible actions the agent can take (cima, baixo, esq, dir)
+actions = [0, 1, 2, 3]
 
 # rewards for each state
-rewards = [0, -5, -5, 1, 10, 0, -1, -5, 3, 3, -5, 3, -3, -5, -100, 200]
-
-# possible actions the agent can take
-actions = [0, 1, 2, 3, 4]
+rewards = [-1, -5, 1, -1, -5, 0, 1, 100, 2, -1, 0, -1, -5, -1, 0, 0, 0, -1, -1, 0, 0, 0, -1, -5, -1]
 
 # initial Q table
 Q = np.zeros((len(states), len(actions)))
@@ -117,7 +147,7 @@ epsilon = 1.0
 final_epsilon = 0.05
 epsilon_decay_rate = 0.95
 
-num_episodes = 100
+num_episodes = 50
 
 for episode in range(num_episodes):
     restart()
@@ -126,16 +156,14 @@ for episode in range(num_episodes):
 
     while not done:
         action = choose_action(state)
-        outy = map_output_neurons(action)
-
-        next_state = get_next_state(outy)
+        next_state = next_state_matrix[state][action]
         reward = rewards[next_state]
 
         Q[state, action] = (1 - alpha) * Q[state, action] + alpha * (reward + gamma * np.max(Q[next_state]))
 
         state = next_state
 
-        if state == 15:
+        if state == 7:
             done = True
     
     epsilon = max(final_epsilon, epsilon * epsilon_decay_rate)

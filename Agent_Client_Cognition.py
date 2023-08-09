@@ -13,6 +13,8 @@ from Agent_Client_Setup import keyMagACT, keyMagMOV, keyMagREQ, keyMagROT, ACTgr
     OUTcnt, OUTdie, OUTgrb, OUTnon, OUTrst, OUTsuc, SRVcnn, SRVinv, SRVnor, SRVpsd, \
     DIRn, DIRne, DIRe, DIRse, DIRs, DIRsw, DIRw, DIRnw
 
+direction = ''
+
 # analyze the response/feedback received from EnviSim
 def feedback_analysis(vecInpSens: np.int32, carryRWD: int) -> int:
     outy = -1
@@ -39,58 +41,184 @@ def feedback_analysis(vecInpSens: np.int32, carryRWD: int) -> int:
 
     return outy
 
-# Q = np.array([
-#     [0.08180034400221003, 0.266033515193871, 0.12799444282201322, 0.18983362466403386, 0.33433807331787196],
-#     [0.008181133633713976, 0.013890189971975822, 0.2086000514991492, 0.020326629867513827, 0.7490019950276472],
-#     [0.004422226711502339, 1.2965774867854421e-42, 0.8420393110825323, 0.10160128353911137, 0.051937178666853816],
-#     [8.529481162998041e-05, 0.9987070151027806, 0.0007279171357575584, 0.00025544225345745233, 0.00022433069637419026],
-#     [0.9999999992128052, 7.870590148910355e-10, 1.420880113411678e-16, 3.3671640503473824e-18, 1.354776183202348e-13],
-#     [0.03074346872455458, 0.04824808041750167, 0.21630540291014458, 0.7018147434639427, 0.0028883044838564874],
-#     [0.031653309211899835, 0.025298561521541228, 0.3058943880434051, 0.0847389763102941, 0.5524147649128598],
-#     [0.0005266551564234157, 0.000995591440440786, 0.01780788860869265, 0.9742766566512263, 0.0063932081432167874],
-#     [0.17770354161378743, 0.17770354161378743, 0.15375312252840848, 0.17770354161378743, 0.3131362526302292],
-#     [0.13802874848911956, 0.09899047158929238, 0.48692328294334897, 0.13802874848911956, 0.13802874848911956],
-#     [0.07866313005272887, 0.07698011908315296, 0.5255394759118572, 0.11151809082932468, 0.20729918412293621],
-#     [0.004686208265746284, 0.0005166552038717102, 0.004528222383582947, 0.004229389876167994, 0.9860395242706311],
-#     [0.0016198039924556623, 0.005193600241928922, 0.0407213903060938, 0.061352950921166084, 0.8911122545383556],
-#     [0.0016267781897223686, 0.00016561169091898446, 0.0032369616667738527, 0.0006894635542839868, 0.9942811848983008],
-#     [0.0044795549748038515, 0.053164184317425034, 0.08061752815198771, 0.007727010257526148, 0.8540117222982573],
-#     [0.09504240191348279, 0.18934420260095214, 0.4094352023602059, 0.1405229160620524, 0.1656552770633068]
-# ])
 Q = np.array([
-[0.006941107646815398, 0.19449600677063456, 0.5490227727668615, 0.08835724460601517, 0.16118286820967337],
-[0.007463816952670078, 0.03559509308948595, 0.3424541112065599, 0.08626915739190076, 0.5282178213593833],
-[0.017023185804342006, 6.486031358969777e-44, 0.20071473525726968, 0.6237906428788383, 0.15847143605955005],
-[1.0, 3.3651098650972725e-44, 3.0119932244259276e-45, 1.4683367136011848e-45, 5.627489096660387e-45],
-[5.112623518111543e-09, 0.9999999297694742, 6.538900352543691e-09, 7.031709448990578e-09, 5.1547292689726454e-08],
-[0.004724635419903378, 0.277310886620949, 0.28533436359472586, 0.4093845176333369, 0.023245596731084926],
-[0.004870723453836984, 0.02797766947667226, 0.1298348553099361, 0.7637656750597372, 0.07355107669981738],
-[0.0003625453518802473, 0.005481879200681162, 0.016861242495062236, 0.949097013987578, 0.0281973189647986],
-[0.2046426016771879, 0.23396245076182798, 0.17414193322056257, 0.2046426016771879, 0.18261041266323377],
-[0.0627073781514589, 0.19049982489553882, 0.2619465239482941, 0.2316214765072389, 0.25322479649746926],
-[0.21178881709687314, 0.1528447316125074, 0.21178881709687314, 0.21178881709687314, 0.21178881709687314],
-[3.7425442316916324e-05, 0.9995202948596346, 0.00010910346582975826, 0.00029891703051952516, 3.425920169910054e-05],
-[0.01698256763735707, 0.08391724451810646, 0.3860108157264352, 0.38004244506406504, 0.13304692705403612],
-[0.009977086935029036, 0.02366377889918398, 0.2352209281276182, 0.11684682059099431, 0.6142913854471744],
-[0.030473746682773868, 0.3633125894890824, 0.05720794484206974, 0.3343545210007029, 0.21465119798537105],
-[0.15186234488833072, 0.09588470857787242, 0.263336677047496, 0.23505465754473037, 0.2538616119415706]])
+    [0.011261525770126015, 0.9778224329345844, 0.010371035941550047, 0.0005450053537398026],
+    [1.1146567193359942e-05, 0.9999467961942368, 6.610488388882947e-06, 3.5446750181231926e-05],
+    [1.666825827863722e-12, 0.9999999999961551, 6.699053239794713e-13, 1.5082063783998588e-12],
+    [0.00432734198801146, 0.9848896803711217, 0.006455635652855574, 0.00432734198801146],
+    [0.25968181234769233, 0.22095456295692295, 0.25968181234769233, 0.25968181234769233],
+    [2.3400481089547084e-11, 3.546262190911295e-11, 3.5230535513964624e-11, 0.9999999999059064],
+    [5.124002834145484e-44, 1.7964832768555884e-43, 6.090009468261404e-43, 1.0],
+    [0.008151500924936425, 0.004171192945124904, 0.9835061131848136, 0.004171192945124904],
+    [4.766703531315274e-32, 4.3468397308188225e-32, 1.0, 4.94318115480553e-32],
+    [0.02406074221230222, 0.039669457474255126, 0.8976574695073416, 0.03861233080610097],
+    [0.41885300202065706, 0.17878445978263074, 0.15354873097971689, 0.24881380721699523],
+    [0.9999951332304594, 2.039085721081367e-06, 2.039085721081367e-06, 7.885980986824679e-07],
+    [0.9998993656061036, 3.186544727045929e-05, 3.8533279290971235e-05, 3.0235667334951077e-05],
+    [0.9996832098223232, 0.00011413842875836803, 7.650927681974476e-05, 0.00012614247209859742],
+    [0.23487211473441744, 0.2680193189100578, 0.2565951449626405, 0.24051342139288423],
+    [0.27026751959684714, 0.2537733105320731, 0.2221790957899643, 0.2537800740811155],
+    [0.22136656347054243, 0.28715456496066966, 0.2878866693156816, 0.20359220225310629],
+    [0.20053182846768985, 0.23441037419443148, 0.3306475018137798, 0.23441029552409884],
+    [0.3276715120552211, 0.08018611998082635, 0.28127994875838114, 0.3108624192055712],
+    [0.30642061330495796, 0.16606498711725112, 0.25339732500106193, 0.274117074576729],
+    [0.2531522609311401, 0.25305753273708836, 0.24073189234277423, 0.25305831398899736],
+    [0.28503598549317605, 0.26869441188389004, 0.285015124939584, 0.16125447768334994],
+    [0.2181084202904254, 0.2541631563001414, 0.32849057930069486, 0.1992378441087383],
+    [0.23004721129932262, 0.32446723307124775, 0.23004725633314552, 0.21543829929628416],
+    [0.3486516430651403, 0.2770206865798252, 0.025676027289894217, 0.3486516430651403]
+])
 
-def map_outy(action):
-    outy = action
+Q_return = np.array([
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [0, 0, 1, 0],
+    [1, 0, 0, 0]
+])
 
-    if action == 1:
-        outy = 3
-    elif action == 2:
+next_state_matrix = [
+    [0, 5, 0, 1],
+    [0, 6, 0, 2],
+    [0, 7, 1, 3],
+    [0, 8, 2, 4],
+    [0, 9, 3, 0],
+    [0, 10, 0, 6],
+    [1, 11, 5, 7],
+    [2, 12, 6, 8],
+    [3, 13, 7, 9],
+    [4, 14, 8, 0],
+    [5, 15, 0, 11],
+    [6, 16, 10, 12],
+    [7, 17, 11, 13],
+    [8, 18, 12, 14],
+    [9, 19, 13, 0],
+    [10, 20, 0, 16],
+    [11, 21, 15, 17],
+    [12, 22, 16, 18],
+    [13, 23, 17, 19],
+    [14, 24, 18, 0],
+    [15, 0, 0, 21],
+    [16, 0, 20, 22],
+    [17, 0, 21, 23],
+    [18, 0, 22, 24],
+    [19, 0, 23, 0]
+]
+
+actual_state = 20
+
+def map_outy(action, direction):
+    outy = 11
+
+    if action == 0 and direction == 'e':
         outy = 11
-    elif action == 3:
+    elif action == 0 and direction == 's':
+        outy = 11
+    elif action == 0 and direction == 'w':
         outy = 12
-    elif action == 4:
-        outy = 13
-    
+
+    elif action == 1 and direction == 'e':
+        outy = 12
+    elif action == 1 and direction == 'n':
+        outy = 11
+    elif action == 1 and direction == 'w':
+        outy = 11
+
+    elif action == 2 and direction == 'e':
+        outy = 12
+    elif action == 2 and direction == 'n':
+        outy = 11
+    elif action == 2 and direction == 's':
+        outy = 12
+
+    elif action == 3 and direction == 'n':
+        outy = 12
+    elif action == 3 and direction == 's':
+        outy = 11
+    elif action == 3 and direction == 'w':
+        outy = 12
+
+    else:
+        outy = 3
+
     return outy
+
+def get_state(posX: int, posY: int) -> int:
+    if posX == 0 and posY == 0:
+        return 0
+    elif posX == 1 and posY == 0:
+        return 1
+    elif posX == 2 and posY == 0:
+        return 2
+    elif posX == 3 and posY == 0:
+        return 3
+    elif posX == 4 and posY == 0:
+        return 4
+    elif posX == 0 and posY == 1:
+        return 5
+    elif posX == 1 and posY == 1:
+        return 6
+    elif posX == 2 and posY == 1:
+        return 7
+    elif posX == 3 and posY == 1:
+        return 8
+    elif posX == 4 and posY == 1:
+        return 9
+    elif posX == 0 and posY == 2:
+        return 10
+    elif posX == 1 and posY == 2:
+        return 11
+    elif posX == 2 and posY == 2:
+        return 12
+    elif posX == 3 and posY == 2:
+        return 13
+    elif posX == 4 and posY == 2:
+        return 14
+    elif posX == 0 and posY == 3:
+        return 15
+    elif posX == 1 and posY == 3:
+        return 16
+    elif posX == 2 and posY == 3:
+        return 17
+    elif posX == 3 and posY == 3:
+        return 18
+    elif posX == 4 and posY == 3:
+        return 19
+    elif posX == 0 and posY == 4:
+        return 20
+    elif posX == 1 and posY == 4:
+        return 21
+    elif posX == 2 and posY == 4:
+        return 22
+    elif posX == 3 and posY == 4:
+        return 23
+    
+    return 24
 
 # it is the agent intelligence
 def infer(vecInpSens: np.int32, carryRWD: int) -> int:
+    global actual_state
+    global direction
     outy = -1
 
     print('infer: ', len(vecInpSens), ' ', vecInpSens) # type: ignore
@@ -99,11 +227,33 @@ def infer(vecInpSens: np.int32, carryRWD: int) -> int:
         if np.sum(vecInpSens) == 0:
             return outy
         else:
-            state = np.where(vecInpSens[0] == 1)[0][0] # type: ignore
-            action_prob = Q[state]
-            action = np.random.choice(len(action_prob), p=action_prob )
-            outy = map_outy(action)
-            print('out: ', OutNeurons[outy])
+            enabledSensorIdx = np.where(vecInpSens[0] == 1)[0][0] # type: ignore
+
+            if carryRWD == 0:
+                # to know the direction
+                if enabledSensorIdx in [6, 12]:
+                    return 12
+                
+                if enabledSensorIdx == 0 and direction == '':
+                    return 11
+                
+                if actual_state == 7:
+                    return 0
+                
+                action = np.argmax(Q[actual_state])
+                outy = map_outy(action, direction)
+
+                if outy == 3:
+                    actual_state = next_state_matrix[actual_state][action]
+            else:
+                if actual_state == 20:
+                    return 1
+                
+                action = np.argmax(Q_return[actual_state])
+                outy = map_outy(action, direction)
+
+                if outy == 3:
+                    actual_state = next_state_matrix[actual_state][action]
 
     return outy
 
@@ -147,6 +297,7 @@ def create_msg(indx_out: int, dist: int) -> str:
 def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
     jobj = json.loads(envisim_answ)
     str_code = ''
+    global direction
     stt_mm = Stt.DECIDING
     idx_inp_sns: int = 0
     CurrSensBits = np.zeros(32, dtype=np.int32)
@@ -309,41 +460,49 @@ def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRn)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRn
+            direction = DIRn
 
         elif DIRne in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRne)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRne
+            direction = DIRne
 
         elif DIRe in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRe)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRe
+            direction = DIRe
 
         elif DIRse in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRse)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRse
+            direction = DIRse
 
         elif DIRs in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRs)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRs
+            direction = DIRs
 
         elif DIRsw in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRsw)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRsw
+            direction = DIRsw
 
         elif DIRw in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRw)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRw
+            direction = DIRw
 
         elif DIRnw in jrasc:
             idx_inp_sns = InpSensors.index('inp_dir_' + DIRnw)
             CurrSensBits[idx_inp_sns] |= 0b1
             str_code = 'inp_dir_' + DIRnw
+            direction = DIRnw
 
         else:
             print('Atenção: DIRECTION veio - indefinido - ?!')
@@ -383,7 +542,7 @@ def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
         stt_mm = Stt.EXCEPTIONS
         jrasc = jobj[keyMwpPOS]
 
-        if len(jrasc) != 2:
+        if len(jrasc) != 3:
             print('Atenção: POSIÇÃO recebida - indefinida - ?!')
             str_code = 'posição_indefinida'
             stt_mm = Stt.ERRORS
@@ -391,6 +550,7 @@ def interpreting(envisim_answ: str) -> tuple[Stt, str, int, np.int32]:
         else:
             posX = jrasc[0]
             posY = jrasc[1]
+            orientation = jrasc[2]
             str_code = keyMwpPOS
             CurrSensBits[idx_inp_sns] |= 0b1
     
